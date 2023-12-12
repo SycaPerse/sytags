@@ -16,4 +16,4 @@ path = "src/bin/syviews.rs"
 
 [dependencies]
 libxml = "0.3.3"
-# scraper = "0.18.1"
+scraper = "0.18.1"

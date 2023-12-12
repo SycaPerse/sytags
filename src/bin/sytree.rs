@@ -1,53 +1,46 @@
-use std::collections::HashMap;
+extern crate scraper;
 
-use libxml::parser::Parser;
-use libxml::tree::*;
-use sytags;
-// fn format_attribute(key: &str, value: &str) -> String {
-//     format!("{}=\"{}\"", key, value)
-// }
-//
-// fn attr_lists(attr: HashMap<String, String>) -> String {
-//     let mut result = Vec::new();
-//     for (k, v) in attr {
-//         result.push(format_attribute(&k, &v));
-//     }
-//     result.join(", ")
-// }
-//
-// fn traverse(node: &Node, depth: usize) {
-//     let indent = " ".repeat(depth * 2);
-//     if node.get_type().unwrap() == NodeType::ElementNode {
-//         let attr = node.get_properties();
-//         let attr_list = attr_lists(attr);
-//         println!("{}{}({}) {{", indent, node.get_name(), attr_list);
-//     }
-//
-//     let content = node.get_content();
-//
-//     let cleaned_text = content.split_whitespace().collect::<Vec<&str>>().join(" ");
-//
-//     if !cleaned_text.is_empty() {
-//         // check if the content is not empty
-//         println!("\"{}\"", cleaned_text); // print the content
-//     }
-//
-//     let mut c: Option<Node> = node.get_first_child();
-//     while let Some(child) = c {
-//         traverse(&child, depth + 1);
-//         c = child.get_next_sibling();
-//     }
-//
-//     if node.get_type().unwrap() == NodeType::ElementNode {
-//         println!("{}}}", indent);
-//     }
-// }
+use scraper::{ElementRef, Html, Selector};
+use std::fs;
+
+fn format_attribute(key: &str, value: &str) -> String {
+    format!("{}=\"{}\"", key, value)
+}
+
+fn walk_tree(element: ElementRef, indent: usize) {
+    let name = element.value().name();
+    let attrs = element
+        .value()
+        .attrs()
+        .map(|(k, v)| format_attribute(k, v))
+        .collect::<Vec<_>>()
+        .join(" ");
+    println!("{}{}({}) {{", " ".repeat(indent), name, attrs); // Add an opening brace here
+
+    for child in element.children() {
+        match child.value() {
+            scraper::Node::Element(_) => {
+                let child_ref = ElementRef::wrap(child).unwrap();
+                walk_tree(child_ref, indent + 2);
+            }
+            scraper::Node::Text(text_node) => {
+                let trimmed_text = text_node.trim();
+                if !trimmed_text.is_empty() {
+                    let txt = format!("{}\"{}\"", " ".repeat(indent + 2), trimmed_text);
+                    println!("{}", txt); // Remove the closing brace here
+                }
+            }
+            _ => {}
+        }
+    }
+    println!("{}}}", " ".repeat(indent)); // Add a closing brace here
+}
 
 fn main() {
-    let parser = Parser::default();
-    let doc = parser
-        .parse_file("/home/afidegnum/Projects/Labs/Nvim/Syca/sytags/index.html")
-        .unwrap();
-    let root = doc.get_root_element().unwrap();
-    sytags::traverse(&root, 0);
+    let html_file = fs::read_to_string("/home/afidegnum/Projects/Labs/Nvim/Syca/sytags/index.html")
+        .expect("Unable to read file");
+    let document = Html::parse_document(&html_file);
+    let body = document.root_element();
+
+    walk_tree(body, 0);
 }
