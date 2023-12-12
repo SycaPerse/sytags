@@ -1,0 +1,4 @@
+// correct
+"rust-analyzer.linkedProjects": [
+"/home/afidegnum/Projects/Labs/Nvim/Syca/sytags",
+]
