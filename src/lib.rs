@@ -1,54 +1,39 @@
-use std::collections::HashMap;
+extern crate scraper;
 
-// use libxml::parser::Parser;
-use libxml::tree::*;
+use scraper::ElementRef;
 
 fn format_attribute(key: &str, value: &str) -> String {
     format!("{}=\"{}\"", key, value)
 }
 
-fn attr_lists(attr: HashMap<String, String>) -> String {
-    let mut result = Vec::new();
-    for (k, v) in attr {
-        result.push(format_attribute(&k, &v));
+pub fn walk_tree(element: ElementRef, indent: usize) {
+    let name = element.value().name();
+    let attrs = element
+        .value()
+        .attrs()
+        .map(|(k, v)| format_attribute(k, v))
+        .collect::<Vec<_>>()
+        .join(", ");
+    println!("{}{}({}) {{", " ".repeat(indent), name, attrs); // Add an opening brace here
+
+    let mut child = element.first_child(); // Get the first child node
+    while let Some(node) = child {
+        // While there is a child node
+        match node.value() {
+            scraper::Node::Element(_) => {
+                let child_ref = ElementRef::wrap(node).unwrap();
+                walk_tree(child_ref, indent + 2);
+            }
+            scraper::Node::Text(text_node) => {
+                let trimmed_text = text_node.trim();
+                if !trimmed_text.is_empty() {
+                    let txt = format!("{}\"{}\"", " ".repeat(indent + 2), trimmed_text);
+                    println!("{}", txt); // Remove the closing brace here
+                }
+            }
+            _ => {}
+        }
+        child = node.next_sibling(); // Update the child node to the next sibling
     }
-    result.join(", ")
+    println!("{}}}", " ".repeat(indent)); // Add a closing brace here
 }
-
-pub fn traverse(node: &Node, depth: usize) {
-    let indent = " ".repeat(depth * 2);
-    if node.get_type().unwrap() == NodeType::ElementNode {
-        let attr = node.get_properties();
-        let attr_list = attr_lists(attr);
-        println!("{}{}({}) {{", indent, node.get_name(), attr_list);
-    }
-
-    let content = node.get_content();
-
-    let cleaned_text = content.split_whitespace().collect::<Vec<&str>>().join(" ");
-
-    let mut c: Option<Node> = node.get_first_child();
-    while let Some(child) = c {
-        traverse(&child, depth + 1);
-        c = child.get_next_sibling();
-    }
-
-    if !cleaned_text.is_empty() {
-        // check if the content is not empty
-        println!("\"{}\"", cleaned_text); // there is a little bug on the text. which keeps litering around
-    }
-    if node.get_type().unwrap() == NodeType::ElementNode {
-        println!("{}}}", indent);
-    }
-}
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//
-//     #[test]
-//     fn it_works() {
-//         let result = myadd(2, 2);
-//         assert_eq!(result, 4);
-//     }
-// }
