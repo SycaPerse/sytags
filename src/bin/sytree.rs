@@ -1,5 +1,5 @@
 extern crate scraper;
-use scraper::{ElementRef, Html, Selector};
+use scraper::Html;
 use std::fs;
 // This seems to be a little buggy.
 // the traversal using the for-loops on the children doesn't properly nest the dom tree as expected.

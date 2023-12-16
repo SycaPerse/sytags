@@ -1,8 +1,9 @@
 extern crate scraper;
-
-use scraper::Html;
+use scraper::{Html, Selector};
 use std::fs;
-
+// This seems to be a little buggy.
+// the traversal using the for-loops on the children doesn't properly nest the dom tree as expected.
+//
 // fn format_attribute(key: &str, value: &str) -> String {
 //     format!("{}=\"{}\"", key, value)
 // }
@@ -14,15 +15,13 @@ use std::fs;
 //         .attrs()
 //         .map(|(k, v)| format_attribute(k, v))
 //         .collect::<Vec<_>>()
-//         .join(", ");
+//         .join(" ");
 //     println!("{}{}({}) {{", " ".repeat(indent), name, attrs); // Add an opening brace here
 //
-//     let mut child = element.first_child(); // Get the first child node
-//     while let Some(node) = child {
-//         // While there is a child node
-//         match node.value() {
+//     for child in element.children() {
+//         match child.value() {
 //             scraper::Node::Element(_) => {
-//                 let child_ref = ElementRef::wrap(node).unwrap();
+//                 let child_ref = ElementRef::wrap(child).unwrap();
 //                 walk_tree(child_ref, indent + 2);
 //             }
 //             scraper::Node::Text(text_node) => {
@@ -34,7 +33,6 @@ use std::fs;
 //             }
 //             _ => {}
 //         }
-//         child = node.next_sibling(); // Update the child node to the next sibling
 //     }
 //     println!("{}}}", " ".repeat(indent)); // Add a closing brace here
 // }
@@ -42,8 +40,21 @@ use std::fs;
 fn main() {
     let html_file = fs::read_to_string("/home/afidegnum/Projects/Labs/Nvim/Syca/sytags/index.html")
         .expect("Unable to read file");
-    let document = Html::parse_document(&html_file);
-    let body = document.root_element();
 
-    sytags::walk_tree(body, 0);
+    let document = Html::parse_document(&html_file);
+
+    // Create a CSS selector for the attribute `d-comp`
+    let selector = Selector::parse("[d-comp]").unwrap();
+
+    // Select the list of elements having an attribute `d-comp`
+    for element in document.select(&selector) {
+        println!("\n ##### Nodes{:?}", element.value().name());
+        sytags::walk_tree(element, 0);
+
+        // Traverse and display the descendants of `element`
+        // for descendant in element.descendants() {
+        //     println!("Descendant: {:?}", descendant.value());
+        // }
+    }
+    // sytags::walk_tree(body, 0);
 }
